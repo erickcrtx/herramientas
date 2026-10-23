@@ -1,0 +1,805 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<base target="_top">
+<title>Control de Herramientas</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+:root{
+  --bg:#eef1f3; --surface:#ffffff; --ink:#1b2430; --muted:#5d6b7a; --line:#d5dbe1;
+  --accent:#1f5f8b; --accent-ink:#ffffff; --out:#c26a00; --out-bg:#fff1dc; --in:#2e7d4f; --in-bg:#e2f3e8; --danger:#b3261e;
+  --f-display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#12171d; --surface:#1b222b; --ink:#e6ebf0; --muted:#97a4b2; --line:#2c3642;
+  --accent:#5aa3d6; --accent-ink:#0d1620; --out:#f0a443; --out-bg:#3a2a12; --in:#6cc58f; --in-bg:#163222; --danger:#f28b82; color-scheme:dark}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--bg);color:var(--ink);margin:0}
+body{font-family:var(--f-body);font-size:16px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:env(safe-area-inset-top,0px) calc(84px + env(safe-area-inset-bottom,0px))}
+.wrap{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:16px 4px;flex-wrap:wrap}
+h1{font-family:var(--f-display);font-weight:700;font-size:28px;letter-spacing:.02em;margin:0;text-transform:uppercase;line-height:1}
+h1 small{display:block;font-family:var(--f-body);font-weight:500;font-size:13px;letter-spacing:.04em;color:var(--muted);text-transform:none;margin-top:4px}
+h2{font-family:var(--f-display);font-weight:700;font-size:22px;text-transform:uppercase;letter-spacing:.03em;margin:0}
+.who{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 180px;max-width:260px}
+.who label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+select,input,textarea{font:inherit;color:var(--ink);background:var(--surface);border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;width:100%}
+textarea{min-height:90px;resize:vertical}
+select:focus,input:focus,textarea:focus,button:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 45%,transparent);outline-offset:1px;border-color:var(--accent)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.field{display:flex;flex-direction:column;gap:6px}
+.field>span{font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.02em}
+.field>span b{color:var(--danger)}
+.err{color:var(--danger);font-size:13px;font-weight:500;margin:0}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row>*{flex:1 1 140px}
+button{font:inherit;font-weight:600;border-radius:8px;padding:11px 14px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+button.big{font-family:var(--f-display);font-size:22px;text-transform:uppercase;letter-spacing:.04em;padding:16px}
+button.go-out{background:var(--out);border-color:var(--out);color:#fff}
+button.go-in{background:var(--in);border-color:var(--in);color:#fff}
+button.danger{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 45%,var(--line))}
+button.link{border:0;background:none;color:var(--accent);padding:4px 0}
+button:disabled{opacity:.5;cursor:not-allowed}
+.scanbox{display:flex;gap:8px}
+.scanbox input{font-family:var(--f-mono);font-size:18px;letter-spacing:.04em;min-width:0}
+.scanbox button{flex:0 0 auto}
+.hint{font-size:13px;color:var(--muted);margin:0}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.pill.in{color:var(--in);background:var(--in-bg)}
+.pill.out{color:var(--out);background:var(--out-bg)}
+.list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden}
+.item{display:grid;grid-template-columns:1fr auto;gap:4px 12px;padding:12px 14px;border:0;border-top:1px solid var(--line);align-items:center;text-align:left;border-radius:0;background:none;width:100%;font-weight:400;color:var(--ink)}
+.item:first-child{border-top:0}
+button.item:hover{background:color-mix(in srgb,var(--accent) 6%,transparent)}
+.item .t{font-weight:600;min-width:0;overflow-wrap:anywhere}
+.item .s{grid-column:1/-1;font-size:13px;color:var(--muted);min-width:0;overflow-wrap:anywhere}
+.mono{font-family:var(--f-mono);font-size:13px}
+.tag{border:1px solid var(--line);border-radius:12px;background:var(--surface);overflow:hidden}
+.tag .head{padding:14px 16px;border-bottom:1px dashed var(--line);display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.tag .head h3{margin:0;font-family:var(--f-display);font-size:26px;line-height:1.05;text-transform:uppercase;overflow-wrap:anywhere;min-width:0}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;padding:14px 16px;font-size:15px;margin:0}
+.kv dt{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.07em;font-weight:600;padding-top:2px}
+.kv dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.notes{white-space:pre-wrap}
+.qr{display:flex;gap:14px;align-items:center;padding:14px 16px;border-top:1px dashed var(--line);flex-wrap:wrap}
+.qr .code{background:#fff;padding:8px;border-radius:6px;line-height:0}
+.qr .code img,.qr .code canvas{width:132px;height:132px}
+.sectionhead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.empty{padding:22px 16px;text-align:center;color:var(--muted);font-size:15px}
+.empty strong{display:block;color:var(--ink);font-size:16px;margin-bottom:4px}
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);
+  padding-bottom:env(safe-area-inset-bottom,0px);padding-left:max(8px,env(safe-area-inset-left,0px));padding-right:max(8px,env(safe-area-inset-right,0px));display:flex;justify-content:center}
+.tabs nav{display:grid;grid-template-columns:repeat(4,1fr);max-width:640px;width:100%}
+.tabs button{border:0;background:none;border-radius:0;padding:10px 4px 12px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:12px;color:var(--muted)}
+.tabs button svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tabs button[aria-current="page"]{color:var(--accent)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(90px + env(safe-area-inset-bottom,0px));z-index:30;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-weight:600;max-width:calc(100% - 32px);box-shadow:0 6px 20px rgba(0,0,0,.2)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.stat b{display:block;font-family:var(--f-display);font-size:28px;line-height:1;font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.stat.o b{color:var(--out)}
+.notice{background:var(--out-bg);color:var(--ink);border:1px solid color-mix(in srgb,var(--out) 40%,transparent);border-radius:10px;padding:10px 12px;font-size:14px}
+.confirm{background:color-mix(in srgb,var(--danger) 8%,var(--surface));border:1px solid color-mix(in srgb,var(--danger) 40%,var(--line));border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.lang{flex:0 0 auto;align-self:flex-end;font-family:var(--f-mono);font-size:13px;letter-spacing:.06em;padding:10px 12px}
+.deptbar{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:6px 6px 6px 12px}
+.deptbar>span{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;flex:0 0 auto}
+.deptbar select{border:0;padding:8px 6px;font-weight:600;background:transparent}
+.chip{display:inline-block;font-size:12px;font-weight:600;color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent);border-radius:6px;padding:1px 7px;margin-right:6px}
+.warn{background:var(--out-bg);border:1px solid color-mix(in srgb,var(--out) 40%,transparent);border-radius:8px;padding:8px 10px;font-size:14px;margin:0}
+#cam{position:fixed;inset:0;z-index:40;background:#000;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:16px;padding:16px}
+#cam #reader{width:100%;max-width:520px}
+#cam button{background:#fff;color:#000}
+@media (prefers-reduced-motion:no-preference){.toast{animation:pop .2s ease-out}@keyframes pop{from{opacity:0;transform:translate(-50%,8px)}}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Control de Herramientas<small>Salida y regreso con código de barras o QR</small></h1>
+    <div class="who">
+      <label for="activeProfile">¿Quién eres?</label>
+      <select id="activeProfile"><option value="">Elige tu perfil</option></select>
+      <span id="myDept" class="hint"></span>
+    </div>
+    <button id="langBtn" class="lang" type="button">EN</button>
+  </header>
+  <main id="view"></main>
+</div>
+
+<div class="tabs"><nav>
+  <button data-tab="scan"><svg viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M7 9v6M10 9v6M13 9v6M17 9v6"/></svg><span>Escanear</span></button>
+  <button data-tab="tools"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.2L3.5 17.3a1.4 1.4 0 0 0 2 2l5.8-5.8a4 4 0 0 0 5.2-5.4l-2.4 2.4-2-.5-.5-2z"/></svg><span>Herramientas</span></button>
+  <button data-tab="people"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 19c.6-3.2 3-5 6-5s5.4 1.8 6 5M16 5.5a3 3 0 0 1 0 5.6M18 14.5c1.6.6 2.7 2.2 3 4.5"/></svg><span>Perfiles</span></button>
+  <button data-tab="log"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg><span>Historial</span></button>
+</nav></div>
+<div id="cam" hidden><div id="reader"></div><p style="color:#fff;margin:0">Apunta al código de barras o QR</p><button id="camClose">Cerrar cámara</button></div>
+<input type="file" id="photoInput" accept="image/*" capture="environment" hidden>
+<div id="fileReader" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  const view = $("#view");
+  const S = { depts: [], tools: [], people: [], logs: [], total: 0, ready: false, busy: false,
+    tab: "scan", toolId: null, editTool: null, editPerson: null, editDept: null, deptView: null, pending: null, confirmDel: null, logFilter: "", toolFilter: "", admin: {}, pin: null, unlockedAt: 0, pinView: false, pinFor: null };
+
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  const fmt = ms => ms ? new Intl.DateTimeFormat(locale(), {day:"2-digit", month:"short", year:"numeric", hour:"numeric", minute:"2-digit"}).format(new Date(ms)) : "—";
+  const since = ms => { const m = Math.max(0, Math.round((Date.now()-ms)/60000)); if (m < 60) return m + " min"; const h = Math.floor(m/60); if (h < 48) return h + " h " + (m%60) + " min"; return Math.floor(h/24) + " días"; };
+  const norm = c => String(c || "").trim();
+  const ls = { get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } }, set(k,v){ try { localStorage.setItem(k,v); } catch(e){} } };
+  /* ---------- idioma / language (ES ⇄ EN) ---------- */
+  const EN = {
+    "Control de Herramientas":"Tool Control","Salida y regreso con código de barras o QR":"Check tools out and in with a barcode or QR",
+    "¿Quién eres?":"Who are you?","Elige tu perfil":"Choose your profile","Sin departamento":"No department",
+    "Solo puedes ver. Pide al dueño de la app que te dé acceso de Colaborador para marcar salidas y regresos.":"View only. Ask the app owner for Editor access to check tools out and in.",
+    "Escanear":"Scan","Herramientas":"Tools","Perfiles":"Profiles","Historial":"History","Herramienta":"Tool",
+    "Viendo":"Viewing","Todos los departamentos":"All departments","Departamento que se muestra":"Department shown",
+    "Elige un departamento":"Choose a department","Sin departamentos creados":"No departments yet",
+    "⚠ Esta herramienta es de":"⚠ This tool belongs to","y tú eres de":"and you are in",". Puedes llevarla, quedará registrado.":". You can take it; it will be logged.",
+    "Cargando inventario…":"Loading inventory…","Conectando con los datos compartidos.":"Connecting to the shared data.","Leyendo la hoja de Google.":"Reading the Google sheet.",
+    "No se pudo conectar":"Could not connect","Inicia sesión en Claude para usar el inventario compartido.":"Sign in to Claude to use the shared inventory.","No se pudo cargar":"Could not load",
+    "Código no registrado":"Unregistered code","No hay ninguna herramienta con el código":"No tool has the code","Registrar herramienta con este código":"Register a tool with this code",
+    "Fuera":"Out","En su lugar":"In place","Depto.":"Dept.","Serie":"Serial","La tiene":"Checked out by","Desde":"Since","Salió":"Out since","Código":"Code","Notas":"Notes",
+    "Elige tu perfil arriba para continuar.":"Choose your profile above to continue.","Marcar regreso":"Check in","Marcar salida":"Check out","Cancelar":"Cancel",
+    "Escanear herramienta":"Scan a tool","Escanea o escribe el código":"Scan or type the code","Código de la herramienta":"Tool code","Buscar":"Search",
+    "📷 Tomar foto del código":"📷 Take a photo of the code","Tomar foto del código":"Take a photo of the code","📷 Escanear con cámara":"📷 Scan with camera","O escribe / usa lector USB":"Or type / use a USB scanner",
+    "Funciona con lector de códigos USB o Bluetooth (escanea dentro del campo), escribiendo el código, o con una foto del código de barras o QR.":"Works with a USB or Bluetooth scanner (scan into the field), by typing the code, or with a photo of the barcode or QR.",
+    "Si la cámara en vivo no abre en tu teléfono, usa “Tomar foto del código”.":"If the live camera does not open on your phone, use “Take a photo of the code”.",
+    "Apunta al código de barras o QR":"Point at the barcode or QR","Cerrar cámara":"Close camera",
+    "Primero crea los perfiles de tu equipo en la pestaña":"First create your team's profiles in","Fuera ahora":"Out now",
+    "Elige tu perfil primero":"Choose your profile first","Elige tu perfil arriba primero":"Choose your profile above first",
+    "No tienes permiso para guardar cambios":"You don't have permission to save changes","Se llenó el espacio de datos. Borra registros viejos.":"Data storage is full. Delete old records.",
+    "No se pudo guardar. Revisa tu conexión e intenta de nuevo.":"Could not save. Check your connection and try again.","No se pudo guardar. Revisa tu conexión.":"Could not save. Check your connection.",
+    "Leyendo código…":"Reading code…","No se encontró un código en la foto. Acércate y enfoca bien.":"No code found in the photo. Move closer and focus.","Código capturado":"Code captured",
+    "No se pudo cargar el lector. Usa la foto.":"The scanner did not load. Use the photo.","La cámara no está disponible aquí. Usa “Tomar foto del código”.":"The camera isn't available here. Use “Take a photo of the code”.",
+    "Herramienta registrada":"Tool registered","Cambios guardados":"Changes saved","Herramienta eliminada":"Tool deleted","Departamento eliminado":"Department deleted",
+    "Departamento creado":"Department created","Departamento guardado":"Department saved","Perfil eliminado":"Profile deleted","Perfil creado":"Profile created","Perfil guardado":"Profile saved",
+    "La descarga no está disponible aquí":"Download isn't available here","Excel guardado":"Excel saved","No se pudo descargar el Excel":"Could not download the Excel file",
+    "+ Registrar":"+ Register","Buscar por nombre, serie o código":"Search by name, serial or code","Buscar herramientas":"Search tools","Aún no hay herramientas":"No tools yet",
+    "Toca “+ Registrar” para dar de alta la primera. Necesitas el nombre y el número de serie.":"Tap “+ Register” to add the first one. You need the name and serial number.",
+    "Toca “+ Registrar” para dar de alta la primera.":"Tap “+ Register” to add the first one.","Sin herramientas en este departamento":"No tools in this department","Sin resultados":"No results",
+    "Registrar herramienta":"Register tool","Editar herramienta":"Edit tool","Nombre de la herramienta":"Tool name","Ej. Taladro percutor DeWalt 20V":"E.g. DeWalt 20V hammer drill",
+    "Departamento":"Department","Número de serie":"Serial number","Ej. 2134-87A9":"E.g. 2134-87A9","Código de barras o QR":"Barcode or QR","Escanea la etiqueta o déjalo vacío":"Scan the label or leave it blank",
+    "Si lo dejas vacío, la app crea un código QR para imprimir y pegar en la herramienta.":"If you leave it blank, the app creates a QR code to print and stick on the tool.",
+    "Marca, modelo, accesorios, estado, ubicación en el estante…":"Brand, model, accessories, condition, shelf location…","Registrar":"Register","Guardar cambios":"Save changes",
+    "Ese código ya está asignado a otra herramienta.":"That code is already assigned to another tool.",
+    "← Volver":"← Back","Etiqueta QR de esta herramienta. Toma captura de pantalla para imprimirla y pegarla.":"QR label for this tool. Take a screenshot to print it and stick it on.",
+    "Editar":"Edit","Eliminar":"Delete","El historial anterior se conserva.":"Past history is kept.","El historial anterior se conserva en la hoja.":"Past history is kept in the sheet.",
+    "No, conservar":"No, keep it","Sí, eliminar":"Yes, delete","Movimientos":"Movements","Sin movimientos todavía.":"No movements yet.","Sin movimientos todavía":"No movements yet",
+    "Departamentos":"Departments","+ Departamento":"+ Department",
+    "Crea los departamentos (por ejemplo: Eléctrico, Mantenimiento) y luego asigna cada perfil y cada herramienta a uno.":"Create the departments (for example: Electrical, Maintenance), then assign each profile and each tool to one.",
+    "+ Nuevo perfil":"+ New profile","Sin puesto":"No position","Sin perfiles en este departamento":"No profiles in this department","Aún no hay perfiles":"No profiles yet",
+    "Crea un perfil por cada trabajador que toma herramientas.":"Create a profile for each worker who takes tools.",
+    "Nuevo departamento":"New department","Editar departamento":"Edit department","Nombre":"Name","Ej. Eléctrico, Mantenimiento, Plomería":"E.g. Electrical, Maintenance, Plumbing",
+    "Si cambias el nombre, se actualiza en todos sus perfiles y herramientas.":"If you rename it, all its profiles and tools are updated.","Crear":"Create","Guardar":"Save",
+    "Eliminar departamento":"Delete department","Solo se puede si no tiene perfiles ni herramientas.":"Only possible if it has no profiles or tools.",
+    "Escribe el nombre.":"Enter the name.","Ya existe un departamento con ese nombre.":"A department with that name already exists.","Escribe el nombre del departamento.":"Enter the department name.",
+    "Nuevo perfil":"New profile","Perfil":"Profile","Nombre completo":"Full name","Ej. Carlos Méndez":"E.g. Carlos Méndez","Puesto":"Position","Ej. Electricista, Mantenimiento":"E.g. Electrician, Maintenance",
+    "Teléfono":"Phone","Opcional":"Optional","Crear perfil":"Create profile","Eliminar perfil":"Delete profile","Tiene ahora":"Has now","Elige el departamento.":"Choose the department.",
+    "⬇ Descargar Excel":"⬇ Download Excel",
+    "Se guardan los movimientos de las últimas 2 semanas. Los más antiguos se borran solos, así que descarga el Excel si quieres un respaldo.":"Movements from the last 2 weeks are kept. Older ones are deleted automatically, so download the Excel file if you want a backup.",
+    "Filtrar por herramienta o persona":"Filter by tool or person","Filtrar historial":"Filter history",
+    "Cada salida y regreso aparece aquí con fecha, hora y quién lo hizo.":"Every check-out and return shows up here with the date, time and who did it.",
+    "Salida":"Check-out","Regreso":"Return",
+    "El nombre y el número de serie son obligatorios.":"The name and serial number are required.","La herramienta ya no existe.":"That tool no longer exists.",
+    "Esta herramienta ya fue regresada.":"This tool was already returned.","Elige un perfil válido.":"Choose a valid profile.","El perfil ya no existe.":"That profile no longer exists.",
+    "El departamento ya no existe.":"That department no longer exists.","Ese departamento ya no existe. Recarga la app.":"That department no longer exists. Reload the app.",
+    "PIN de administrador":"Admin PIN","Registrar, editar o eliminar requiere el PIN de administrador.":"Registering, editing or deleting requires the admin PIN.",
+    "Desbloquear":"Unlock","Bloquear":"Lock","Escribe el PIN.":"Enter the PIN.","PIN incorrecto.":"Wrong PIN.","Nuevo PIN":"New PIN",
+    "Modo administrador activo por 30 minutos":"Admin mode on for 30 minutes","Modo administrador bloqueado":"Admin mode locked","🔓 Modo administrador activo":"🔓 Admin mode on",
+    "🔒 Para registrar, editar o eliminar se necesita el PIN.":"🔒 Registering, editing or deleting needs the PIN.",
+    "Todavía no hay PIN: cualquiera con el enlace puede registrar, editar o eliminar. Crea un PIN y compártelo solo con quien debe administrar.":"There is no PIN yet: anyone with the link can register, edit or delete. Create a PIN and share it only with the people who manage the app.",
+    "Nuevo PIN (4 a 8 números)":"New PIN (4 to 8 digits)","Guardar PIN":"Save PIN","PIN guardado":"PIN saved","Cambiar PIN":"Change PIN",
+    "Eres el dueño de la app.":"You own this app.","No necesitas PIN.":"You don't need a PIN.",
+    "El PIN debe tener de 4 a 8 números.":"The PIN must be 4 to 8 digits.","Solo el dueño de la app puede cambiar el PIN.":"Only the app owner can change the PIN.",
+    "Demasiados intentos con PIN incorrecto. Espera 10 minutos.":"Too many wrong PIN attempts. Wait 10 minutes.",
+    "Código de equipo":"Team code","Escribe el código que te dio tu encargado. Solo se pide una vez en este teléfono.":"Enter the code your supervisor gave you. It is only asked once on this phone.",
+    "Entrar":"Enter","Escribe el código de equipo.":"Enter the team code.","Código de equipo incorrecto.":"Wrong team code.",
+    "El dueño todavía no configura el código de equipo.":"The owner hasn't set up the team code yet.",
+    "Nuevo código de equipo (6 a 20 letras o números)":"New team code (6 to 20 letters or digits)","Guardar código":"Save code","Cambiar código":"Change code",
+    "Código de equipo activo.":"Team code active.","Tus compañeros lo escriben una vez en su teléfono.":"Your coworkers enter it once on their phone.",
+    "Para usar el enlace de la app con cámara, cada trabajador escribe este código una vez en su teléfono.":"To use the camera version of the app, each worker enters this code once on their phone.",
+    "Código de equipo guardado":"Team code saved","Nuevo código de equipo":"New team code",
+    "El código de equipo debe tener de 6 a 20 letras o números, sin espacios.":"The team code must be 6 to 20 letters or digits, no spaces.",
+    "Solo el dueño de la app puede cambiar el código de equipo.":"Only the app owner can change the team code.","Acción no permitida.":"Action not allowed.",
+    "Fecha":"Date","Hora":"Time","Movimiento":"Movement","Persona":"Person","Depto. herramienta":"Tool dept.","Depto. persona":"Person dept.","Ninguna herramienta fuera":"No tools out"
+  };
+  const RX = [
+    [/^(\d+) perfil\(es\) · (\d+) herramienta\(s\)$/, "$1 profile(s) · $2 tool(s)"],
+    [/^Hay (\d+) perfil\(es\) o herramienta\(s\) sin departamento\. Ábrelos y asígnales uno\.$/, "$1 profile(s) or tool(s) have no department. Open them and assign one."],
+    [/^(\d+) fuera$/, "$1 out"],
+    [/^Tiene (\d+) herramienta\(s\) fuera\.$/, "Has $1 tool(s) out."],
+    [/^¿Eliminar a (.+)\?$/, "Delete $1?"],
+    [/^¿Eliminar “(.+)”\?$/, "Delete “$1”?"],
+    [/^No se puede eliminar: tiene (\d+) perfil\(es\) y (\d+) herramienta\(s\)\. Muévelos a otro departamento primero\.$/, "Can't delete: it has $1 profile(s) and $2 tool(s). Move them to another department first."],
+    [/^Regreso registrado · (.+)$/, "Return logged · $1"],
+    [/^Salida registrada · (.+)$/, "Check-out logged · $1"],
+    [/^(\d+) movimientos\.$/, "$1 movements."],
+    [/^El historial completo queda guardado en la hoja de Google “Historial”\. Aquí se muestran los últimos (\d+) de (\d+)\.$/, "The full history is saved in the Google sheet “Historial”. Showing the latest $1 of $2."],
+    [/^\(de (.+)\)$/, "(from $1)"],
+    [/^Esta herramienta ya está fuera \(la tiene (.+)\)\.$/, "This tool is already out ($1 has it)."],
+    [/^Falta (.+)\.$/, (m, p) => "Missing: " + p.replace("el nombre","name").replace("el departamento","department").replace("el número de serie","serial number").replace(" y ", ", ") + "."],
+    [/ \(el mío\)$/, " (mine)"],
+    [/· hace /, "· "],
+    [/(\d+) días/, "$1 days"]
+  ];
+  const ES = Object.fromEntries(Object.entries(EN).map(([k, v]) => [v, k]));
+  let lang = ls.get("lang") || ((navigator.language || "es").toLowerCase().startsWith("en") ? "en" : "es");
+  const locale = () => lang === "en" ? "en-US" : "es-US";
+  function tr(s, dict = EN){
+    if (lang === "es" && dict === EN) return s;
+    const m = String(s).match(/^(\s*)([\s\S]*?)(\s*)$/); const core = m[2];
+    if (!core) return s;
+    if (dict[core] !== undefined) return m[1] + dict[core] + m[3];
+    if (dict !== EN) return s;
+    let out = core, hit = false;
+    for (const [re, rep] of RX) if (re.test(out)) { out = out.replace(re, rep); hit = true; if (re.source.startsWith("^")) break; }
+    return hit ? m[1] + out + m[3] : s;
+  }
+  // "hace X" → "X ago" se arma aparte para que la frase quede natural
+  const agoFix = s => lang === "en" ? s.replace(/· (\d+ (?:days|h \d+ min|min))$/, "· $1 ago") : s;
+  function translateTree(root, dict = EN){
+    if (!root) return;
+    const els = root.nodeType === 1 ? [root, ...root.querySelectorAll("*")] : [];
+    els.forEach(el => ["placeholder", "aria-label", "label"].forEach(a => { const v = el.getAttribute(a); if (v) { const n = tr(v, dict); if (n !== v) el.setAttribute(a, n); } }));
+    const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: n => /^(TEXTAREA|SCRIPT|STYLE)$/.test(n.parentNode?.nodeName) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
+    const nodes = []; if (root.nodeType === 3) nodes.push(root); while (walk.nextNode()) nodes.push(walk.currentNode);
+    nodes.forEach(n => { const v = n.nodeValue; let t = tr(v, dict); if (dict === EN && n.parentNode?.nodeName === "DD") t = agoFix(t); if (t !== v) n.nodeValue = t; });
+  }
+  new MutationObserver(muts => { if (lang !== "en") return; muts.forEach(m => m.addedNodes.forEach(n => translateTree(n))); })
+    .observe(document.body, { childList: true, subtree: true });
+  function applyLang(){
+    document.documentElement.lang = lang;
+    document.title = lang === "en" ? "Tool Control" : "Control de Herramientas";
+    const b = document.getElementById("langBtn"); if (b) { b.textContent = lang === "en" ? "ES" : "EN"; b.setAttribute("aria-label", lang === "en" ? "Cambiar a español" : "Switch to English"); }
+    if (lang === "en") translateTree(document.body); else translateTree(document.body, ES);
+  }
+  function setLang(l){ lang = l; ls.set("lang", l); applyLang(); renderProfileSelect(); render(); }
+
+  let toastT;
+  function toast(msg){ document.querySelector(".toast")?.remove(); const t = document.createElement("div"); t.className="toast"; t.textContent=msg; document.body.appendChild(t); clearTimeout(toastT); toastT=setTimeout(()=>t.remove(),3000); }
+
+  /* ---------- servidor ---------- */
+  /* ---------- conexión ----------
+     Dentro de Google (Apps Script) usa google.script.run.
+     Fuera de Google (GitHub Pages) llama a la API con el código de equipo. */
+  const API_URL = "https://script.google.com/macros/s/AKfycbxLanolVbQx4NrGprZPo_P-i5V1alzflnA0VyyEoA-IkKrXEwPpWBWxdM69XKtdV264TQ/exec";
+  const APP_URL = "https://erickcrtx.github.io/herramientas/";
+  const ON_GOOGLE = !!(window.google && google.script && google.script.run);
+  const TEAM_ERR = /código de equipo/i;
+  function call(fn, ...args){
+    if (ON_GOOGLE) return new Promise((res, rej) => google.script.run.withSuccessHandler(res).withFailureHandler(e => rej(e))[fn](...args));
+    return fetch(API_URL, { method: "POST", body: JSON.stringify({ fn, args, team: ls.get("team") || "" }) })
+      .then(r => r.json())
+      .then(d => { if (!d.ok) throw new Error(d.error || "Error"); return d.result; });
+  }
+  function apply(d){ S.depts = d.depts || []; S.tools = d.tools; S.people = d.people; S.logs = d.logs; S.total = d.total; S.admin = d.admin || {}; S.ready = true; renderProfileSelect(); }
+  const errMsg = e => (e && e.message ? e.message.replace(/^Exception:\s*/, "") : "No se pudo guardar. Revisa tu conexión.");
+  async function act(fn, ...args){
+    if (S.busy) return null; S.busy = true;
+    try { const r = await call(fn, ...args); apply(r.data); return r; }
+    catch(e){ const m = errMsg(e); if (/^PIN incorrecto|Demasiados intentos/.test(m)) lockAdmin(); toast(m); refresh(); return null; }
+    finally { S.busy = false; }
+  }
+  const typing = () => ["INPUT","TEXTAREA"].includes(document.activeElement?.tagName) && (S.editTool || S.editPerson || document.activeElement.value);
+  async function refresh(){
+    if (!ON_GOOGLE && !ls.get("team")) { S.needTeam = true; render(); return; }
+    try { apply(await call("getData")); S.needTeam = false; openDeepLink(); if (!typing()) render(); }
+    catch(e){
+      if (!ON_GOOGLE && TEAM_ERR.test(errMsg(e))) { S.needTeam = true; S.teamErr = errMsg(e); render(); return; }
+      if (!S.ready) { view.innerHTML = `<div class="panel"><div class="empty"><strong>No se pudo cargar</strong>${esc(errMsg(e))}</div></div>`; }
+    }
+  }
+  setInterval(() => { if (document.visibilityState === "visible" && !S.busy && !S.needTeam) refresh(); }, 20000);
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") refresh(); });
+
+  const personName = id => S.people.find(p => p.id === id)?.name || "";
+  const activeId = () => $("#activeProfile").value;
+  const myDept = () => S.people.find(p => p.id === activeId())?.dept || "";
+  const NO_DEPT = "Sin departamento";
+  const deptLabel = d => d || NO_DEPT;
+  const byName = (a,b) => a.name.localeCompare(b.name);
+
+  /* Departamento que se está viendo: "" = todos */
+  function viewDept(){
+    const v = S.deptView;
+    if (v === null) return myDept();
+    if (v && !S.depts.some(d => d.name === v)) return "";
+    return v;
+  }
+  const inView = dept => { const v = viewDept(); return !v || dept === v; };
+  function deptBar(){
+    if (!S.depts.length) return "";
+    const v = viewDept();
+    return `<label class="deptbar"><span>Viendo</span><select id="deptView" aria-label="Departamento que se muestra">
+      <option value="">Todos los departamentos</option>${S.depts.slice().sort(byName).map(d => `<option value="${esc(d.name)}" ${d.name===v?"selected":""}>${esc(d.name)}${d.name===myDept()?" (el mío)":""}</option>`).join("")}</select></label>`;
+  }
+  function bindDeptBar(){ const s = $("#deptView"); if (s) s.onchange = () => { S.deptView = s.value; render(); }; }
+  function deptOptions(sel){
+    return `<option value="">${S.depts.length ? "Elige un departamento" : "Sin departamentos creados"}</option>` +
+      S.depts.slice().sort(byName).map(d => `<option value="${esc(d.name)}" ${d.name===sel?"selected":""}>${esc(d.name)}</option>`).join("");
+  }
+
+  /* ---------- administrador (PIN) ---------- */
+  const UNLOCK_MS = 30 * 60 * 1000;
+  const unlocked = () => !!S.pin && Date.now() - S.unlockedAt < UNLOCK_MS;
+  const canAdmin = () => !!S.admin.isOwner || !S.admin.pinSet || unlocked();
+  function needAdmin(fn){ if (canAdmin()) return fn(); S.pinFor = fn; S.pinView = true; render(); window.scrollTo(0,0); }
+  function lockAdmin(){ S.pin = null; S.unlockedAt = 0; }
+  function renderPin(){
+    view.innerHTML = `<div class="wrap"><form class="panel" id="pinForm" novalidate>
+      <h2>PIN de administrador</h2>
+      <p class="hint">Registrar, editar o eliminar requiere el PIN de administrador.</p>
+      <label class="field"><span>PIN</span><input id="pin-in" type="password" inputmode="numeric" autocomplete="off" maxlength="8" aria-label="PIN de administrador"></label>
+      <p class="err" id="pin-err" hidden></p>
+      <div class="row"><button type="button" id="pin-cancel">Cancelar</button><button class="primary" type="submit" id="pin-ok">Desbloquear</button></div>
+    </form></div>`;
+    $("#pin-cancel").onclick = () => { S.pinView = false; S.pinFor = null; render(); };
+    $("#pinForm").onsubmit = async e => {
+      e.preventDefault();
+      const pin = $("#pin-in").value.trim(), er = $("#pin-err");
+      if (!pin) { er.textContent = "Escribe el PIN."; er.hidden = false; return; }
+      $("#pin-ok").disabled = true;
+      try {
+        await call("checkPin", pin);
+        S.pin = pin; S.unlockedAt = Date.now(); S.pinView = false;
+        const fn = S.pinFor; S.pinFor = null; toast("Modo administrador activo por 30 minutos");
+        fn ? fn() : render();
+      } catch(err) { er.textContent = errMsg(err); er.hidden = false; $("#pin-ok").disabled = false; $("#pin-in").select(); }
+    };
+    $("#pin-in").focus();
+  }
+  function teamPanel(){
+    if (!S.admin.isOwner) return "";
+    const form = `<form id="setTeamForm" novalidate ${S.admin.teamSet ? "hidden" : ""}><label class="field"><span>Nuevo código de equipo (6 a 20 letras o números)</span><input id="tc-in" autocomplete="off" autocapitalize="characters" maxlength="20" aria-label="Nuevo código de equipo"></label>
+        <p class="err" id="tc-err" hidden></p><button class="primary" type="submit" id="tc-ok">Guardar código</button></form>`;
+    return S.admin.teamSet
+      ? `<div class="panel"><div class="sectionhead"><span><b>Código de equipo activo.</b> Tus compañeros lo escriben una vez en su teléfono.</span><button id="chgTeam">Cambiar código</button></div>${form}</div>`
+      : `<div class="panel"><h2>Código de equipo</h2><p class="notice">Para usar el enlace de la app con cámara, cada trabajador escribe este código una vez en su teléfono.</p>${form}</div>`;
+  }
+  function adminPanel(){
+    const a = S.admin;
+    if (a.isOwner) return pinPanel() + teamPanel();
+    if (!a.pinSet) return "";
+    return unlocked()
+      ? `<div class="panel"><div class="sectionhead"><span>🔓 Modo administrador activo</span><button id="lockBtn">Bloquear</button></div></div>`
+      : `<div class="panel"><div class="sectionhead"><span>🔒 Para registrar, editar o eliminar se necesita el PIN.</span><button id="unlockBtn">Desbloquear</button></div></div>`;
+  }
+  function pinPanel(){
+    const a = S.admin;
+    {
+      if (!a.pinSet) return `<form class="panel" id="setPinForm" novalidate><h2>PIN de administrador</h2>
+        <p class="notice">Todavía no hay PIN: cualquiera con el enlace puede registrar, editar o eliminar. Crea un PIN y compártelo solo con quien debe administrar.</p>
+        <label class="field"><span>Nuevo PIN (4 a 8 números)</span><input id="np-in" type="password" inputmode="numeric" autocomplete="new-password" maxlength="8" aria-label="Nuevo PIN"></label>
+        <p class="err" id="np-err" hidden></p><button class="primary" type="submit" id="np-ok">Guardar PIN</button></form>`;
+      return `<div class="panel"><div class="sectionhead"><span><b>Eres el dueño de la app.</b> No necesitas PIN.</span><button id="chgPin">Cambiar PIN</button></div>
+        <form id="setPinForm" novalidate hidden><label class="field"><span>Nuevo PIN (4 a 8 números)</span><input id="np-in" type="password" inputmode="numeric" autocomplete="new-password" maxlength="8" aria-label="Nuevo PIN"></label>
+        <p class="err" id="np-err" hidden></p><button class="primary" type="submit" id="np-ok">Guardar PIN</button></form></div>`;
+    }
+  }
+  function bindAdminPanel(){
+    $("#chgPin") && ($("#chgPin").onclick = () => { $("#setPinForm").hidden = false; $("#np-in").focus(); });
+    $("#lockBtn") && ($("#lockBtn").onclick = () => { lockAdmin(); toast("Modo administrador bloqueado"); render(); });
+    $("#unlockBtn") && ($("#unlockBtn").onclick = () => needAdmin(render));
+    $("#chgTeam") && ($("#chgTeam").onclick = () => { $("#setTeamForm").hidden = false; $("#tc-in").focus(); });
+    const tf = $("#setTeamForm");
+    if (tf) tf.onsubmit = async e => {
+      e.preventDefault();
+      const v = $("#tc-in").value.trim(), er = $("#tc-err");
+      if (!/^[A-Za-z0-9]{6,20}$/.test(v)) { er.textContent = "El código de equipo debe tener de 6 a 20 letras o números, sin espacios."; er.hidden = false; return; }
+      $("#tc-ok").disabled = true;
+      try { S.admin = await call("setTeamCode", v); toast("Código de equipo guardado"); render(); }
+      catch(err) { er.textContent = errMsg(err); er.hidden = false; $("#tc-ok").disabled = false; }
+    };
+    const f = $("#setPinForm"); if (!f) return;
+    f.onsubmit = async e => {
+      e.preventDefault();
+      const v = $("#np-in").value.trim(), er = $("#np-err");
+      if (!/^\d{4,8}$/.test(v)) { er.textContent = "El PIN debe tener de 4 a 8 números."; er.hidden = false; return; }
+      $("#np-ok").disabled = true;
+      try { S.admin = await call("setPin", v); toast("PIN guardado"); render(); }
+      catch(err) { er.textContent = errMsg(err); er.hidden = false; $("#np-ok").disabled = false; }
+    };
+  }
+
+  /* ---------- código de equipo (app externa) ---------- */
+  function renderTeam(){
+    view.innerHTML = `<div class="wrap"><form class="panel" id="teamForm" novalidate>
+      <h2>Código de equipo</h2>
+      <p class="hint">Escribe el código que te dio tu encargado. Solo se pide una vez en este teléfono.</p>
+      <label class="field"><span>Código de equipo</span><input id="team-in" autocomplete="off" autocapitalize="characters" maxlength="20" aria-label="Código de equipo"></label>
+      <p class="err" id="team-err" ${S.teamErr ? "" : "hidden"}>${esc(S.teamErr || "")}</p>
+      <button class="primary big" type="submit" id="team-ok">Entrar</button>
+    </form></div>`;
+    $("#teamForm").onsubmit = async e => {
+      e.preventDefault();
+      const v = $("#team-in").value.trim(), er = $("#team-err");
+      if (!v) { er.textContent = "Escribe el código de equipo."; er.hidden = false; return; }
+      $("#team-ok").disabled = true;
+      ls.set("team", v);
+      try { await call("checkTeam"); S.needTeam = false; S.teamErr = ""; render(); refresh(); }
+      catch(err) { ls.set("team", ""); er.textContent = errMsg(err); er.hidden = false; $("#team-ok").disabled = false; }
+    };
+    $("#team-in").focus();
+  }
+
+  /* ---------- enlace directo desde el QR (?c=CODIGO) ---------- */
+  let deepCode = null, deepDone = false;
+  try { deepCode = new URLSearchParams(location.search).get("c"); } catch(e){}
+  if (ON_GOOGLE) try { google.script.url.getLocation(l => { if (l && l.parameter && l.parameter.c) { deepCode = l.parameter.c; openDeepLink(); render(); } }); } catch(e){}
+  function openDeepLink(){
+    if (deepDone || !deepCode || !S.ready) return;
+    deepDone = true; S.tab = "scan"; S.pending = norm(deepCode);
+    if (!ON_GOOGLE) try { history.replaceState(null, "", location.pathname); } catch(e){}
+  }
+  const qrText = code => APP_URL.startsWith("http") ? APP_URL + "?c=" + encodeURIComponent(code) : code;
+  function codeFrom(text){
+    const t = norm(text);
+    try { if (/^https?:\/\//i.test(t)) { const c = new URL(t).searchParams.get("c"); if (c) return norm(c); } } catch(e){}
+    return t;
+  }
+
+  $("#langBtn").onclick = () => setLang(lang === "en" ? "es" : "en");
+  applyLang();
+
+  /* ---------- navegación ---------- */
+  function go(tab){ Object.assign(S, {tab, toolId:null, editTool:null, editPerson:null, editDept:null, confirmDel:null, pinView:false, pinFor:null, pending: tab === "scan" ? null : S.pending}); render(); window.scrollTo(0,0); }
+  document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => go(b.dataset.tab));
+
+  function renderProfileSelect(){
+    const sel = $("#activeProfile"); const cur = sel.value || ls.get("activeProfile") || "";
+    const groups = {};
+    S.people.forEach(p => (groups[deptLabel(p.dept)] = groups[deptLabel(p.dept)] || []).push(p));
+    const opt = p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`;
+    const keys = Object.keys(groups).sort((a,b) => a === NO_DEPT ? 1 : b === NO_DEPT ? -1 : a.localeCompare(b));
+    sel.innerHTML = '<option value="">Elige tu perfil</option>' + (S.depts.length
+      ? keys.map(k => `<optgroup label="${esc(k)}">${groups[k].sort(byName).map(opt).join("")}</optgroup>`).join("")
+      : S.people.slice().sort(byName).map(opt).join(""));
+    sel.value = S.people.some(p => p.id === cur) ? cur : "";
+    const md = $("#myDept"); if (md) md.textContent = activeId() && S.depts.length ? deptLabel(myDept()) : "";
+  }
+  $("#activeProfile").onchange = e => {
+    ls.set("activeProfile", e.target.value);
+    S.deptView = null; // al elegir perfil: mostrar su departamento
+    renderProfileSelect(); render();
+  };
+
+  function render(){
+    document.querySelectorAll(".tabs button").forEach(b => b.dataset.tab === S.tab ? b.setAttribute("aria-current","page") : b.removeAttribute("aria-current"));
+    if (S.needTeam) return renderTeam();
+    if (!S.ready) { view.innerHTML = `<div class="panel"><div class="empty"><strong>Cargando inventario…</strong>Leyendo la hoja de Google.</div></div>`; return; }
+    if (S.pinView) return renderPin();
+    if (S.toolId) return renderToolDetail();
+    if (S.editTool) return renderToolForm();
+    if (S.editPerson) return renderPersonForm();
+    if (S.editDept) return renderDeptForm();
+    ({scan:renderScan, tools:renderTools, people:renderPeople, log:renderLog})[S.tab]();
+  }
+
+  /* ---------- escanear ---------- */
+  function renderScan(){
+    const vTools = S.tools.filter(t => inView(t.dept));
+    const out = vTools.filter(t => t.status === "out").length;
+    const vPeople = S.people.filter(p => inView(p.dept)).length;
+    let result = "";
+    if (S.pending) {
+      const code = S.pending;
+      const t = S.tools.find(x => norm(x.code) === code);
+      if (!t) {
+        result = `<div class="panel"><h2>Código no registrado</h2>
+          <p class="hint">No hay ninguna herramienta con el código <span class="mono">${esc(code)}</span>.</p>
+          <button class="primary" id="regNew">Registrar herramienta con este código</button></div>`;
+      } else {
+        const isOut = t.status === "out";
+        const who = activeId();
+        const other = !isOut && who && t.dept && myDept() && t.dept !== myDept();
+        result = `<div class="tag">
+          <div class="head"><h3>${esc(t.name)}</h3><span class="pill ${isOut?"out":"in"}">${isOut?"Fuera":"En su lugar"}</span></div>
+          <dl class="kv">${S.depts.length ? `<dt>Depto.</dt><dd>${esc(deptLabel(t.dept))}</dd>` : ""}<dt>Serie</dt><dd class="mono">${esc(t.serial)}</dd>
+          ${isOut ? `<dt>La tiene</dt><dd>${esc(t.holderName||personName(t.holderId)||"—")}</dd><dt>Desde</dt><dd>${fmt(t.since)} · ${since(t.since)}</dd>` : ""}</dl>
+          <div style="padding:0 16px 16px;display:flex;flex-direction:column;gap:8px">
+            ${!who ? `<p class="err">Elige tu perfil arriba para continuar.</p>` : ""}
+            ${other ? `<p class="warn">⚠ Esta herramienta es de <b>${esc(t.dept)}</b> y tú eres de <b>${esc(myDept())}</b>. Puedes llevarla, quedará registrado.</p>` : ""}
+            <button class="big ${isOut?"go-in":"go-out"}" id="doMove" ${!who?"disabled":""}>${isOut?"Marcar regreso":"Marcar salida"}</button>
+            <button id="cancelScan">Cancelar</button>
+          </div></div>`;
+      }
+    }
+    view.innerHTML = `<div class="wrap">
+      ${deptBar()}
+      <div class="stats"><div class="stat"><b>${vTools.length}</b><span>Herramientas</span></div>
+        <div class="stat o"><b>${out}</b><span>Fuera</span></div><div class="stat"><b>${vPeople}</b><span>Perfiles</span></div></div>
+      <div class="panel">
+        <h2>Escanear herramienta</h2>
+        <button class="primary big" id="camBtn">📷 Escanear con cámara</button>
+        <form id="scanForm" class="scanbox"><input id="scanInput" autocomplete="off" placeholder="O escribe / usa lector USB" aria-label="Código de la herramienta"><button type="submit">Buscar</button></form>
+        <button id="photoBtn">Tomar foto del código</button>
+        <p class="hint">Si la cámara en vivo no abre en tu teléfono, usa “Tomar foto del código”.</p>
+      </div>
+      ${result}
+      ${S.people.length === 0 ? `<div class="notice">Primero crea los perfiles de tu equipo en la pestaña <b>Perfiles</b>.</div>` : ""}
+      ${renderOutList()}
+    </div>`;
+    $("#scanForm").onsubmit = e => { e.preventDefault(); const c = norm($("#scanInput").value); if (c) { S.pending = c; render(); } };
+    $("#camBtn").onclick = () => openCam("scan");
+    $("#photoBtn").onclick = () => { photoTarget = "scan"; $("#photoInput").click(); };
+    $("#regNew") && ($("#regNew").onclick = () => needAdmin(() => { S.editTool = {code:S.pending}; S.pending=null; render(); }));
+    $("#cancelScan") && ($("#cancelScan").onclick = () => { S.pending = null; render(); });
+    $("#doMove") && ($("#doMove").onclick = () => move(S.tools.find(x => norm(x.code) === S.pending)));
+    bindItems(); bindDeptBar();
+  }
+  const deptChip = d => S.depts.length && !viewDept() ? `<span class="chip">${esc(deptLabel(d))}</span>` : "";
+  function renderOutList(){
+    const out = S.tools.filter(t => t.status === "out" && inView(t.dept)).sort((a,b)=>a.since-b.since);
+    if (!out.length) return "";
+    return `<h2>Fuera ahora</h2><div class="list">${out.map(t => `
+      <button class="item" data-tool="${esc(t.id)}"><span class="t">${esc(t.name)}</span><span class="pill out">${since(t.since)}</span>
+      <span class="s">${deptChip(t.dept)}${esc(t.holderName||personName(t.holderId)||"—")} · ${fmt(t.since)}</span></button>`).join("")}</div>`;
+  }
+
+  async function move(t){
+    if (!t) return;
+    const pid = activeId();
+    if (!pid) { toast("Elige tu perfil arriba primero"); $("#activeProfile").focus(); return; }
+    const btn = $("#doMove") || $("#quickMove"); if (btn) btn.disabled = true;
+    const r = await act("move", t.id, pid, t.status === "out" ? "in" : "out");
+    if (r) { toast((r.action === "in" ? "Regreso registrado · " : "Salida registrada · ") + fmt(r.at)); S.pending = null; S.toolId = null; }
+    render();
+  }
+
+  /* ---------- cámara ---------- */
+  let cam = null, camTarget = "scan";
+  const FORMATS = () => window.Html5QrcodeSupportedFormats ? [
+    "QR_CODE","CODE_128","CODE_39","CODE_93","EAN_13","EAN_8","UPC_A","UPC_E","ITF","CODABAR","DATA_MATRIX"
+  ].map(f => Html5QrcodeSupportedFormats[f]).filter(v => v !== undefined) : undefined;
+  async function openCam(target){
+    camTarget = target;
+    if (!window.Html5Qrcode) return toast("No se pudo cargar el lector. Usa la foto.");
+    $("#cam").hidden = false;
+    try {
+      cam = new Html5Qrcode("reader", { formatsToSupport: FORMATS(), verbose: false });
+      await cam.start({ facingMode: "environment" }, { fps: 10, qrbox: (w, h) => ({ width: Math.min(w, 320), height: Math.min(h, 200) }) },
+        text => { closeCam(); gotCode(text); }, () => {});
+    } catch(e) {
+      closeCam();
+      toast("La cámara no está disponible aquí. Usa “Tomar foto del código”.");
+    }
+  }
+  async function closeCam(){ $("#cam").hidden = true; if (cam) { try { await cam.stop(); } catch(e){} try { cam.clear(); } catch(e){} cam = null; } }
+  $("#camClose").onclick = closeCam;
+  function gotCode(text){
+    const c = codeFrom(text);
+    if (navigator.vibrate) try { navigator.vibrate(80); } catch(e){}
+    if (camTarget === "scan") { S.pending = c; S.tab = "scan"; render(); }
+    else { const i = $("#f-code"); if (i) i.value = c; toast("Código capturado"); }
+  }
+
+  /* ---------- foto -> código ---------- */
+  let photoTarget = "scan";
+  $("#photoInput").onchange = async e => {
+    const f = e.target.files?.[0]; e.target.value = ""; if (!f) return;
+    toast("Leyendo código…");
+    let code = null;
+    try { if ("BarcodeDetector" in window) { const r = await new BarcodeDetector().detect(await createImageBitmap(f)); code = r[0]?.rawValue || null; } } catch(_){}
+    if (!code && window.Html5Qrcode) { try { const h = new Html5Qrcode("fileReader", { formatsToSupport: FORMATS(), verbose: false }); code = await h.scanFile(f, false); h.clear(); } catch(_){} }
+    if (!code) return toast("No se encontró un código en la foto. Acércate y enfoca bien.");
+    camTarget = photoTarget; gotCode(code);
+  };
+
+  /* ---------- herramientas ---------- */
+  function renderTools(){
+    const q = S.toolFilter.toLowerCase();
+    const list = S.tools.filter(t => inView(t.dept) && (!q || [t.name,t.serial,t.code].some(v => String(v||"").toLowerCase().includes(q)))).sort(byName);
+    view.innerHTML = `<div class="wrap">
+      <div class="sectionhead"><h2>Herramientas</h2><button class="primary" id="addTool">+ Registrar</button></div>
+      ${deptBar()}
+      <input id="toolSearch" placeholder="Buscar por nombre, serie o código" value="${esc(S.toolFilter)}" aria-label="Buscar herramientas">
+      ${S.tools.length === 0 ? `<div class="panel"><div class="empty"><strong>Aún no hay herramientas</strong>Toca “+ Registrar” para dar de alta la primera.</div></div>`
+       : `<div class="list">${list.map(t => `<button class="item" data-tool="${esc(t.id)}"><span class="t">${esc(t.name)}</span>
+          <span class="pill ${t.status==="out"?"out":"in"}">${t.status==="out"?"Fuera":"En su lugar"}</span>
+          <span class="s">${deptChip(t.dept)}<span class="mono">S/N ${esc(t.serial)}</span>${t.status==="out" ? " · " + esc(t.holderName||personName(t.holderId)) : ""}</span></button>`).join("") || `<div class="empty">Sin herramientas en este departamento</div>`}</div>`}
+    </div>`;
+    $("#addTool").onclick = () => needAdmin(() => { S.editTool = { dept: viewDept() || myDept() }; render(); });
+    const si = $("#toolSearch"); si.oninput = () => { S.toolFilter = si.value; const pos = si.selectionStart; renderTools(); const n = $("#toolSearch"); n.focus(); n.setSelectionRange(pos,pos); };
+    bindItems(); bindDeptBar();
+  }
+  function bindItems(){ view.querySelectorAll("[data-tool]").forEach(b => b.onclick = () => { S.toolId = b.dataset.tool; S.confirmDel = null; render(); window.scrollTo(0,0); }); }
+
+  function renderToolForm(){
+    const t = S.editTool; const isNew = !t.id;
+    view.innerHTML = `<form class="panel" id="toolForm" novalidate>
+      <h2>${isNew ? "Registrar herramienta" : "Editar herramienta"}</h2>
+      <label class="field"><span>Nombre de la herramienta <b>*</b></span><input id="f-name" value="${esc(t.name||"")}" placeholder="Ej. Taladro percutor DeWalt 20V"></label>
+      ${S.depts.length ? `<label class="field"><span>Departamento <b>*</b></span><select id="f-dept">${deptOptions(t.dept ?? "")}</select></label>` : ""}
+      <label class="field"><span>Número de serie <b>*</b></span><input id="f-serial" class="mono" value="${esc(t.serial||"")}" placeholder="Ej. 2134-87A9" autocapitalize="characters"></label>
+      <div class="field"><span>Código de barras o QR</span>
+        <div class="scanbox"><input id="f-code" class="mono" value="${esc(t.code||"")}" placeholder="Escanea la etiqueta o déjalo vacío"><button type="button" id="f-cam">📷</button></div>
+        <span class="hint">Si lo dejas vacío, la app crea un código QR para imprimir y pegar en la herramienta.</span></div>
+      <label class="field"><span>Notas</span><textarea id="f-notes" placeholder="Marca, modelo, accesorios, estado, ubicación en el estante…">${esc(t.notes||"")}</textarea></label>
+      <p class="err" id="f-err" hidden></p>
+      <div class="row"><button type="button" id="f-cancel">Cancelar</button><button class="primary" type="submit" id="f-save">${isNew?"Registrar":"Guardar cambios"}</button></div>
+    </form>`;
+    $("#f-cam").onclick = () => openCam("form");
+    $("#f-cancel").onclick = () => { const id = t.id; S.editTool = null; S.toolId = id || null; render(); };
+    $("#toolForm").onsubmit = async e => {
+      e.preventDefault();
+      const name = $("#f-name").value.trim(), serial = $("#f-serial").value.trim(), notes = $("#f-notes").value.trim(), code = norm($("#f-code").value);
+      const err = $("#f-err");
+      const dept = $("#f-dept") ? $("#f-dept").value : "";
+      const miss = []; if (!name) miss.push("el nombre"); if (S.depts.length && !dept) miss.push("el departamento"); if (!serial) miss.push("el número de serie");
+      if (miss.length) { err.textContent = "Falta " + miss.join(", ") + "."; err.hidden = false; (!name?$("#f-name"):(S.depts.length && !dept)?$("#f-dept"):$("#f-serial")).focus(); return; }
+      $("#f-save").disabled = true;
+      const r = await act("saveTool", {id: t.id || "", name, serial, code, notes, dept}, S.pin);
+      if (r) { S.editTool = null; S.toolId = r.id; toast(isNew ? "Herramienta registrada" : "Cambios guardados"); render(); }
+      else $("#f-save").disabled = false;
+    };
+    $("#f-name").focus();
+  }
+
+  function renderToolDetail(){
+    const t = S.tools.find(x => x.id === S.toolId);
+    if (!t) { S.toolId = null; return render(); }
+    const isOut = t.status === "out";
+    const hist = S.logs.filter(l => l.toolId === t.id).slice(0, 15);
+    view.innerHTML = `<div class="wrap">
+      <button class="link" id="back" style="align-self:flex-start">← Volver</button>
+      <div class="tag">
+        <div class="head"><h3>${esc(t.name)}</h3><span class="pill ${isOut?"out":"in"}">${isOut?"Fuera":"En su lugar"}</span></div>
+        <dl class="kv">${S.depts.length ? `<dt>Depto.</dt><dd>${esc(deptLabel(t.dept))}</dd>` : ""}<dt>Serie</dt><dd class="mono">${esc(t.serial)}</dd><dt>Código</dt><dd class="mono">${esc(t.code)}</dd>
+          ${isOut ? `<dt>La tiene</dt><dd>${esc(t.holderName||personName(t.holderId))}</dd><dt>Salió</dt><dd>${fmt(t.since)} · hace ${since(t.since)}</dd>` : ""}
+          ${t.notes ? `<dt>Notas</dt><dd class="notes">${esc(t.notes)}</dd>` : ""}</dl>
+        <div class="qr"><div class="code" id="qrBox"></div><div class="hint" style="flex:1 1 160px">Etiqueta QR de esta herramienta. Toma captura de pantalla para imprimirla y pegarla.<br><span class="mono">${esc(t.code)}</span></div></div>
+      </div>
+      ${!isOut && t.dept && myDept() && t.dept !== myDept() ? `<p class="warn">⚠ Esta herramienta es de <b>${esc(t.dept)}</b> y tú eres de <b>${esc(myDept())}</b>. Puedes llevarla, quedará registrado.</p>` : ""}
+      <button class="big ${isOut?"go-in":"go-out"}" id="quickMove">${isOut?"Marcar regreso":"Marcar salida"}</button>
+      <div class="row"><button id="editT">Editar</button><button class="danger" id="delT">Eliminar</button></div>
+      ${S.confirmDel === t.id ? `<div class="confirm"><b>¿Eliminar “${esc(t.name)}”?</b><span class="hint">El historial anterior se conserva en la hoja.</span>
+        <div class="row"><button id="delNo">No, conservar</button><button class="danger" id="delYes">Sí, eliminar</button></div></div>` : ""}
+      <h2>Movimientos</h2>
+      ${hist.length ? `<div class="list">${hist.map(logRow).join("")}</div>` : `<div class="panel"><div class="empty">Sin movimientos todavía.</div></div>`}
+    </div>`;
+    try { if (window.QRCode) new QRCode($("#qrBox"), {text:qrText(t.code), width:264, height:264, correctLevel:QRCode.CorrectLevel.M}); } catch(e){}
+    $("#back").onclick = () => { S.toolId = null; render(); };
+    $("#editT").onclick = () => needAdmin(() => { S.editTool = {...t}; S.toolId = null; render(); });
+    $("#delT").onclick = () => needAdmin(() => { S.toolId = t.id; S.confirmDel = t.id; render(); });
+    $("#delNo") && ($("#delNo").onclick = () => { S.confirmDel = null; render(); });
+    $("#delYes") && ($("#delYes").onclick = async () => { const r = await act("deleteTool", t.id, S.pin); if (r) { S.confirmDel=null; S.toolId=null; toast("Herramienta eliminada"); } render(); });
+    $("#quickMove").onclick = () => move(t);
+  }
+
+  /* ---------- perfiles ---------- */
+  function renderPeople(){
+    const list = S.people.filter(p => inView(p.dept)).sort(byName);
+    const unassigned = S.depts.length ? S.people.filter(p => !p.dept).length + S.tools.filter(t => !t.dept).length : 0;
+    const depts = S.depts.slice().sort(byName);
+    view.innerHTML = `<div class="wrap">
+      ${adminPanel()}
+      <div class="sectionhead"><h2>Departamentos</h2><button id="addD">+ Departamento</button></div>
+      ${depts.length ? `<div class="list">${depts.map(d => {
+          const nP = S.people.filter(p => p.dept === d.name).length, nT = S.tools.filter(t => t.dept === d.name).length;
+          return `<button class="item" data-dept="${esc(d.id)}"><span class="t">${esc(d.name)}</span><span class="hint">Editar</span>
+            <span class="s">${nP} perfil(es) · ${nT} herramienta(s)</span></button>`; }).join("")}</div>`
+        : `<div class="notice">Crea los departamentos (por ejemplo: Eléctrico, Mantenimiento) y luego asigna cada perfil y cada herramienta a uno.</div>`}
+      ${unassigned ? `<p class="warn">Hay ${unassigned} perfil(es) o herramienta(s) sin departamento. Ábrelos y asígnales uno.</p>` : ""}
+      <div class="sectionhead"><h2>Perfiles</h2><button class="primary" id="addP">+ Nuevo perfil</button></div>
+      ${deptBar()}
+      ${S.people.length ? `<div class="list">${list.map(p => { const n = S.tools.filter(t => t.status==="out" && t.holderId===p.id).length;
+        return `<button class="item" data-person="${esc(p.id)}"><span class="t">${esc(p.name)}</span>${n?`<span class="pill out">${n} fuera</span>`:`<span></span>`}
+        <span class="s">${deptChip(p.dept)}${esc([p.role,p.phone].filter(Boolean).join(" · ") || "Sin puesto")}</span></button>`; }).join("") || `<div class="empty">Sin perfiles en este departamento</div>`}</div>`
+      : `<div class="panel"><div class="empty"><strong>Aún no hay perfiles</strong>Crea un perfil por cada trabajador que toma herramientas.</div></div>`}
+    </div>`;
+    $("#addD").onclick = () => needAdmin(() => { S.editDept = {}; render(); });
+    $("#addP").onclick = () => needAdmin(() => { S.editPerson = { dept: viewDept() }; render(); });
+    view.querySelectorAll("[data-person]").forEach(b => b.onclick = () => needAdmin(() => { S.editPerson = {...S.people.find(p => p.id === b.dataset.person)}; render(); }));
+    view.querySelectorAll("[data-dept]").forEach(b => b.onclick = () => needAdmin(() => { S.editDept = {...S.depts.find(d => d.id === b.dataset.dept)}; render(); }));
+    bindDeptBar(); bindAdminPanel();
+  }
+
+  function renderDeptForm(){
+    const d = S.editDept; const isNew = !d.id;
+    view.innerHTML = `<div class="wrap"><form class="panel" id="dForm" novalidate>
+      <h2>${isNew ? "Nuevo departamento" : "Editar departamento"}</h2>
+      <label class="field"><span>Nombre <b>*</b></span><input id="d-name" value="${esc(d.name||"")}" placeholder="Ej. Eléctrico, Mantenimiento, Plomería"></label>
+      ${isNew ? "" : `<p class="hint">Si cambias el nombre, se actualiza en todos sus perfiles y herramientas.</p>`}
+      <p class="err" id="d-err" hidden></p>
+      <div class="row"><button type="button" id="d-cancel">Cancelar</button><button class="primary" type="submit" id="d-save">${isNew ? "Crear" : "Guardar"}</button></div>
+      ${isNew ? "" : `<button type="button" class="danger" id="d-del">Eliminar departamento</button>`}
+      ${S.confirmDel === d.id ? `<div class="confirm"><b>¿Eliminar “${esc(d.name)}”?</b><span class="hint">Solo se puede si no tiene perfiles ni herramientas.</span>
+        <div class="row"><button type="button" id="dd-no">No</button><button type="button" class="danger" id="dd-yes">Sí, eliminar</button></div></div>` : ""}
+    </form></div>`;
+    $("#d-cancel").onclick = () => { S.editDept = null; S.confirmDel = null; render(); };
+    $("#d-del") && ($("#d-del").onclick = () => { S.confirmDel = d.id; render(); });
+    $("#dd-no") && ($("#dd-no").onclick = () => { S.confirmDel = null; render(); });
+    $("#dd-yes") && ($("#dd-yes").onclick = async () => { const r = await act("deleteDept", d.id, S.pin); if (r) { S.editDept = null; S.confirmDel = null; toast("Departamento eliminado"); } render(); });
+    $("#dForm").onsubmit = async e => {
+      e.preventDefault();
+      const name = $("#d-name").value.trim();
+      if (!name) { const er = $("#d-err"); er.textContent = "Escribe el nombre."; er.hidden = false; $("#d-name").focus(); return; }
+      $("#d-save").disabled = true;
+      const oldName = d.name;
+      const r = await act("saveDept", { id: d.id || "", name }, S.pin);
+      if (r) {
+        if (oldName && S.deptView === oldName) S.deptView = name;
+        S.editDept = null; toast(isNew ? "Departamento creado" : "Departamento guardado"); render();
+      } else $("#d-save").disabled = false;
+    };
+    $("#d-name").focus();
+  }
+  function renderPersonForm(){
+    const p = S.editPerson; const isNew = !p.id;
+    const holding = isNew ? [] : S.tools.filter(t => t.status==="out" && t.holderId===p.id);
+    view.innerHTML = `<div class="wrap"><form class="panel" id="pForm" novalidate>
+      <h2>${isNew?"Nuevo perfil":"Perfil"}</h2>
+      <label class="field"><span>Nombre completo <b>*</b></span><input id="p-name" value="${esc(p.name||"")}" placeholder="Ej. Carlos Méndez"></label>
+      ${S.depts.length ? `<label class="field"><span>Departamento <b>*</b></span><select id="p-dept">${deptOptions(p.dept ?? "")}</select></label>` : ""}
+      <label class="field"><span>Puesto</span><input id="p-role" value="${esc(p.role||"")}" placeholder="Ej. Electricista, Mantenimiento"></label>
+      <label class="field"><span>Teléfono</span><input id="p-phone" type="tel" value="${esc(p.phone||"")}" placeholder="Opcional"></label>
+      <p class="err" id="p-err" hidden></p>
+      <div class="row"><button type="button" id="p-cancel">Cancelar</button><button class="primary" type="submit" id="p-save">${isNew?"Crear perfil":"Guardar"}</button></div>
+      ${isNew ? "" : `<button type="button" class="danger" id="p-del">Eliminar perfil</button>`}
+      ${S.confirmDel === p.id ? `<div class="confirm"><b>¿Eliminar a ${esc(p.name)}?</b>${holding.length?`<span class="err">Tiene ${holding.length} herramienta(s) fuera.</span>`:""}
+        <div class="row"><button type="button" id="pd-no">No</button><button type="button" class="danger" id="pd-yes">Sí, eliminar</button></div></div>` : ""}
+    </form>
+    ${holding.length ? `<h2>Tiene ahora</h2><div class="list">${holding.map(t => `<button class="item" data-tool="${esc(t.id)}"><span class="t">${esc(t.name)}</span><span class="pill out">${since(t.since)}</span><span class="s mono">S/N ${esc(t.serial)}</span></button>`).join("")}</div>` : ""}
+    </div>`;
+    bindItems();
+    $("#p-cancel").onclick = () => { S.editPerson = null; S.confirmDel = null; render(); };
+    $("#p-del") && ($("#p-del").onclick = () => { S.confirmDel = p.id; render(); });
+    $("#pd-no") && ($("#pd-no").onclick = () => { S.confirmDel = null; render(); });
+    $("#pd-yes") && ($("#pd-yes").onclick = async () => { const r = await act("deletePerson", p.id, S.pin); if (r) { S.editPerson=null; S.confirmDel=null; toast("Perfil eliminado"); } render(); });
+    $("#pForm").onsubmit = async e => {
+      e.preventDefault();
+      const name = $("#p-name").value.trim(), role = $("#p-role").value.trim(), phone = $("#p-phone").value.trim();
+      const dept = $("#p-dept") ? $("#p-dept").value : "";
+      const er = $("#p-err");
+      if (!name) { er.textContent = "Escribe el nombre."; er.hidden = false; $("#p-name").focus(); return; }
+      if (S.depts.length && !dept) { er.textContent = "Elige el departamento."; er.hidden = false; $("#p-dept").focus(); return; }
+      $("#p-save").disabled = true;
+      const r = await act("savePerson", {id: p.id || "", name, role, phone, dept}, S.pin);
+      if (r) {
+        if (isNew && !activeId()) { ls.set("activeProfile", r.id); S.deptView = null; }
+        renderProfileSelect();
+        S.editPerson = null; toast(isNew ? "Perfil creado" : "Perfil guardado"); render();
+      } else $("#p-save").disabled = false;
+    };
+  }
+
+  /* ---------- historial ---------- */
+  function logRow(l){
+    return `<div class="item"><span class="t">${esc(l.toolName)}</span><span class="pill ${l.action==="out"?"out":"in"}">${l.action==="out"?"Salida":"Regreso"}</span>
+      <span class="s">${deptChip(l.toolDept)}${esc(l.personName||"—")}${l.personDept && l.toolDept && l.personDept !== l.toolDept ? ` <span class="hint">(de ${esc(l.personDept)})</span>` : ""} · <span style="font-variant-numeric:tabular-nums">${fmt(l.at)}</span></span></div>`;
+  }
+  function renderLog(){
+    const q = S.logFilter.toLowerCase();
+    const v = viewDept();
+    const list = S.logs.filter(l => (!v || l.toolDept === v || l.personDept === v) && (!q || [l.toolName,l.personName,l.serial].some(x => String(x||"").toLowerCase().includes(q))));
+    view.innerHTML = `<div class="wrap"><h2>Historial</h2>
+      ${deptBar()}
+      <p class="hint">El historial completo queda guardado en la hoja de Google “Historial”. Aquí se muestran los últimos ${Math.min(S.total, 500)} de ${S.total}.</p>
+      <input id="logSearch" placeholder="Filtrar por herramienta o persona" value="${esc(S.logFilter)}" aria-label="Filtrar historial">
+      ${S.logs.length ? `<div class="list">${list.map(logRow).join("") || `<div class="empty">Sin resultados</div>`}</div>`
+        : `<div class="panel"><div class="empty"><strong>Sin movimientos todavía</strong>Cada salida y regreso aparece aquí con fecha, hora y quién lo hizo.</div></div>`}</div>`;
+    const si = $("#logSearch"); si.oninput = () => { S.logFilter = si.value; const pos = si.selectionStart; renderLog(); const n = $("#logSearch"); n.focus(); n.setSelectionRange(pos,pos); };
+    bindDeptBar();
+  }
+
+  render();
+  refresh();
+})();
+</script>
+</body>
+</html>
