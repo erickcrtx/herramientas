@@ -100,6 +100,16 @@ button.item:hover{background:color-mix(in srgb,var(--accent) 6%,transparent)}
 #cam{position:fixed;inset:0;z-index:40;background:#000;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:16px;padding:16px}
 #cam #reader{width:100%;max-width:520px}
 #cam button{background:#fff;color:#000}
+.qrbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.qrbtns button{flex:1 1 140px}
+#printArea{display:none}
+@media print{
+  @page{margin:10mm}
+  body{background:#fff!important;padding:0!important}
+  body>*:not(#printArea){display:none!important}
+  #printArea{display:grid!important;grid-template-columns:repeat(3,1fr);gap:6mm}
+  #printArea img{width:100%;height:auto;break-inside:avoid;border:1px dashed #999}
+}
 @media (prefers-reduced-motion:no-preference){.toast{animation:pop .2s ease-out}@keyframes pop{from{opacity:0;transform:translate(-50%,8px)}}}
 </style>
 </head>
@@ -126,6 +136,7 @@ button.item:hover{background:color-mix(in srgb,var(--accent) 6%,transparent)}
 <div id="cam" hidden><div id="reader"></div><p style="color:#fff;margin:0">Apunta al código de barras o QR</p><button id="camClose">Cerrar cámara</button></div>
 <input type="file" id="photoInput" accept="image/*" capture="environment" hidden>
 <div id="fileReader" hidden></div>
+<div id="printArea"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
@@ -216,6 +227,9 @@ button.item:hover{background:color-mix(in srgb,var(--accent) 6%,transparent)}
     "Código de equipo guardado":"Team code saved","Nuevo código de equipo":"New team code",
     "El código de equipo debe tener de 6 a 20 letras o números, sin espacios.":"The team code must be 6 to 20 letters or digits, no spaces.",
     "Solo el dueño de la app puede cambiar el código de equipo.":"Only the app owner can change the team code.","Acción no permitida.":"Action not allowed.",
+    "⬇ Descargar QR":"⬇ Download QR","🖨 Imprimir":"🖨 Print","🖨 Imprimir etiquetas":"🖨 Print labels",
+    "Etiqueta QR de esta herramienta. Descárgala o imprímela y pégala en la herramienta.":"QR label for this tool. Download or print it and stick it on the tool.",
+    "Etiqueta descargada":"Label downloaded","No se pudo generar el QR.":"Could not create the QR.",
     "Fecha":"Date","Hora":"Time","Movimiento":"Movement","Persona":"Person","Depto. herramienta":"Tool dept.","Depto. persona":"Person dept.","Ninguna herramienta fuera":"No tools out"
   };
   const RX = [
@@ -453,6 +467,52 @@ button.item:hover{background:color-mix(in srgb,var(--accent) 6%,transparent)}
     return t;
   }
 
+  /* ---------- etiquetas QR (descargar / imprimir) ---------- */
+  function labelCanvas(t){
+    const W = 600, H = 800, Q = 480;
+    const tmp = document.createElement("div");
+    new QRCode(tmp, { text: qrText(t.code), width: Q, height: Q, correctLevel: QRCode.CorrectLevel.M });
+    const qr = tmp.querySelector("canvas");
+    const c = document.createElement("canvas"); c.width = W; c.height = H;
+    const g = c.getContext("2d");
+    g.fillStyle = "#fff"; g.fillRect(0, 0, W, H);
+    g.strokeStyle = "#1b2430"; g.lineWidth = 4; g.strokeRect(6, 6, W - 12, H - 12);
+    g.drawImage(qr, (W - Q) / 2, 40, Q, Q);
+    g.fillStyle = "#1b2430"; g.textAlign = "center";
+    // nombre (hasta 2 líneas)
+    g.font = "bold 40px 'Barlow Condensed', 'Arial Narrow', Arial, sans-serif";
+    const words = String(t.name || "").toUpperCase().split(/\s+/), lines = [];
+    let line = "";
+    for (const w of words) { const test = line ? line + " " + w : w; if (g.measureText(test).width > W - 60 && line) { lines.push(line); line = w; } else line = test; }
+    if (line) lines.push(line);
+    const shown = lines.slice(0, 2); if (lines.length > 2) shown[1] = shown[1].replace(/.{0,2}$/, "…");
+    shown.forEach((l, i) => g.fillText(l, W / 2, 575 + i * 44));
+    g.font = "bold 30px 'IBM Plex Mono', Menlo, monospace";
+    g.fillText(t.code, W / 2, 680);
+    g.font = "24px 'IBM Plex Mono', Menlo, monospace"; g.fillStyle = "#5d6b7a";
+    g.fillText("S/N " + (t.serial || ""), W / 2, 718);
+    if (t.dept) g.fillText(t.dept, W / 2, 752);
+    return c;
+  }
+  function downloadLabel(t){
+    if (!window.QRCode) return toast("No se pudo generar el QR.");
+    labelCanvas(t).toBlob(b => {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(b);
+      a.download = "etiqueta-" + String(t.code).replace(/[^A-Za-z0-9_-]/g, "_") + ".png";
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+      toast("Etiqueta descargada");
+    }, "image/png");
+  }
+  function printLabels(list){
+    if (!window.QRCode) return toast("No se pudo generar el QR.");
+    if (!list.length) return;
+    const area = $("#printArea"); area.innerHTML = "";
+    const imgs = list.map(t => { const i = new Image(); i.alt = t.name; i.src = labelCanvas(t).toDataURL("image/png"); area.appendChild(i); return i; });
+    Promise.all(imgs.map(i => i.decode ? i.decode().catch(() => {}) : Promise.resolve())).then(() => window.print());
+  }
+
   $("#langBtn").onclick = () => setLang(lang === "en" ? "es" : "en");
   applyLang();
 
@@ -605,7 +665,7 @@ button.item:hover{background:color-mix(in srgb,var(--accent) 6%,transparent)}
     const q = S.toolFilter.toLowerCase();
     const list = S.tools.filter(t => inView(t.dept) && (!q || [t.name,t.serial,t.code].some(v => String(v||"").toLowerCase().includes(q)))).sort(byName);
     view.innerHTML = `<div class="wrap">
-      <div class="sectionhead"><h2>Herramientas</h2><button class="primary" id="addTool">+ Registrar</button></div>
+      <div class="sectionhead"><h2>Herramientas</h2><div class="row" style="flex:0 1 auto"><button id="printAll" ${list.length ? "" : "disabled"}>🖨 Imprimir etiquetas</button><button class="primary" id="addTool">+ Registrar</button></div></div>
       ${deptBar()}
       <input id="toolSearch" placeholder="Buscar por nombre, serie o código" value="${esc(S.toolFilter)}" aria-label="Buscar herramientas">
       ${S.tools.length === 0 ? `<div class="panel"><div class="empty"><strong>Aún no hay herramientas</strong>Toca “+ Registrar” para dar de alta la primera.</div></div>`
@@ -614,6 +674,7 @@ button.item:hover{background:color-mix(in srgb,var(--accent) 6%,transparent)}
           <span class="s">${deptChip(t.dept)}<span class="mono">S/N ${esc(t.serial)}</span>${t.status==="out" ? " · " + esc(t.holderName||personName(t.holderId)) : ""}</span></button>`).join("") || `<div class="empty">Sin herramientas en este departamento</div>`}</div>`}
     </div>`;
     $("#addTool").onclick = () => needAdmin(() => { S.editTool = { dept: viewDept() || myDept() }; render(); });
+    $("#printAll").onclick = () => printLabels(list);
     const si = $("#toolSearch"); si.oninput = () => { S.toolFilter = si.value; const pos = si.selectionStart; renderTools(); const n = $("#toolSearch"); n.focus(); n.setSelectionRange(pos,pos); };
     bindItems(); bindDeptBar();
   }
@@ -662,7 +723,8 @@ button.item:hover{background:color-mix(in srgb,var(--accent) 6%,transparent)}
         <dl class="kv">${S.depts.length ? `<dt>Depto.</dt><dd>${esc(deptLabel(t.dept))}</dd>` : ""}<dt>Serie</dt><dd class="mono">${esc(t.serial)}</dd><dt>Código</dt><dd class="mono">${esc(t.code)}</dd>
           ${isOut ? `<dt>La tiene</dt><dd>${esc(t.holderName||personName(t.holderId))}</dd><dt>Salió</dt><dd>${fmt(t.since)} · hace ${since(t.since)}</dd>` : ""}
           ${t.notes ? `<dt>Notas</dt><dd class="notes">${esc(t.notes)}</dd>` : ""}</dl>
-        <div class="qr"><div class="code" id="qrBox"></div><div class="hint" style="flex:1 1 160px">Etiqueta QR de esta herramienta. Toma captura de pantalla para imprimirla y pegarla.<br><span class="mono">${esc(t.code)}</span></div></div>
+        <div class="qr"><div class="code" id="qrBox"></div><div class="hint" style="flex:1 1 160px">Etiqueta QR de esta herramienta. Descárgala o imprímela y pégala en la herramienta.<br><span class="mono">${esc(t.code)}</span>
+          <div class="qrbtns"><button id="dlQR">⬇ Descargar QR</button><button id="prQR">🖨 Imprimir</button></div></div></div>
       </div>
       ${!isOut && t.dept && myDept() && t.dept !== myDept() ? `<p class="warn">⚠ Esta herramienta es de <b>${esc(t.dept)}</b> y tú eres de <b>${esc(myDept())}</b>. Puedes llevarla, quedará registrado.</p>` : ""}
       <button class="big ${isOut?"go-in":"go-out"}" id="quickMove">${isOut?"Marcar regreso":"Marcar salida"}</button>
@@ -679,6 +741,8 @@ button.item:hover{background:color-mix(in srgb,var(--accent) 6%,transparent)}
     $("#delNo") && ($("#delNo").onclick = () => { S.confirmDel = null; render(); });
     $("#delYes") && ($("#delYes").onclick = async () => { const r = await act("deleteTool", t.id, S.pin); if (r) { S.confirmDel=null; S.toolId=null; toast("Herramienta eliminada"); } render(); });
     $("#quickMove").onclick = () => move(t);
+    $("#dlQR").onclick = () => downloadLabel(t);
+    $("#prQR").onclick = () => printLabels([t]);
   }
 
   /* ---------- perfiles ---------- */
